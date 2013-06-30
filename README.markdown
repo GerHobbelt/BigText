@@ -3,6 +3,7 @@ BigText Makes Text Big
 
 Requirements
 ----------------------------
+
 1. jQuery
 1. A block level parent element, with block level children.
 
@@ -116,6 +117,7 @@ See [Paravel's FitText plugin](http://fittextjs.com/). Curious how the two plugi
 
 Extra Features
 ----------------------------
+
 ### Re-BigText on Resize (Responsive BigText)
 
 BigText does not implement its own debounced resize event, to reduce duplicate code. However, it does search for existing implementations. For example, [Ben Alman's Throttle/Debounce plugin](https://github.com/cowboy/jquery-throttle-debounce) or [Louis-Remi Babe's SmartResize](https://github.com/lrbabe/jquery-smartresize/), in that order.  If no debounced plugin is found, BigText will bind to the native resize event.
@@ -124,6 +126,7 @@ Common Problems
 ----------------------------
 
 ### Lines Wrapping Pre-BigText
+
 The starting font-size must be small enough to guarantee that each individual line is not wrapping pre-BigText.  Adjust the amount of text per line, or set the starting font size using the example below.
 
 #### Change the default min (starting) font size
