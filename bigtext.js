@@ -1,21 +1,20 @@
+/*! BigText - v0.1.5 - 2013-08-24
+* https://github.com/zachleat/BigText
+* Copyright (c) 2013 @zachleat; Licensed MIT */
+
 ;(function(window, $) {
   var counter = 0,
     $headCache = $('head'),
     oldBigText = window.BigText,
     oldjQueryMethod = $.fn.bigtext,
     BigText = {
+      DEBUG_MODE: false,
       DEFAULT_MIN_FONT_SIZE_PX: null,
       DEFAULT_MAX_FONT_SIZE_PX: 528,
       GLOBAL_STYLE_ID: 'bigtext-style',
       STYLE_ID: 'bigtext-id',
       LINE_CLASS_PREFIX: 'bigtext-line',
       EXEMPT_CLASS: 'bigtext-exempt',
-      DEFAULT_CHILD_SELECTOR: '> div',
-      childSelectors: {
-        div: '> div',
-        ol: '> li',
-        ul: '> li'
-      },
       noConflict: function(restore)
       {
         if(restore) {
@@ -27,20 +26,20 @@
       test: {
         noFractionalFontSize: (function() {
           if( !( 'getComputedStyle' in window ) || !( 'body' in document ) ) {
-            return;
+            return true;
           }
           var test = $('<div/>').css({
               position: 'absolute',
               'font-size': '14.1px'
             }).appendTo(document.body).get(0),
-            fontSize = window.getComputedStyle( test, null ).getPropertyValue( 'font-size' ),
-            ret = fontSize === '14px';
-          return ret;
+            computedStyle = window.getComputedStyle( test, null );
+
+          return computedStyle ? computedStyle.getPropertyValue( 'font-size' ) === '14px' : true;
         })()
       },
       init: function() {
         if(!$('#'+BigText.GLOBAL_STYLE_ID).length) {
-          $headCache.append(BigText.generateStyleTag(BigText.GLOBAL_STYLE_ID, ['.bigtext * { white-space: nowrap; }',
+          $headCache.append(BigText.generateStyleTag(BigText.GLOBAL_STYLE_ID, ['.bigtext * { white-space: nowrap; } .bigtext > * { display: block; }',
                                           '.bigtext .' + BigText.EXEMPT_CLASS + ', .bigtext .' + BigText.EXEMPT_CLASS + ' * { white-space: normal; }']));
         }
       },
@@ -92,19 +91,17 @@
         options = $.extend({
               minfontsize: BigText.DEFAULT_MIN_FONT_SIZE_PX,
               maxfontsize: BigText.DEFAULT_MAX_FONT_SIZE_PX,
-              childSelector: '',
+              childSelector: '', 
               resize: true
             }, options || {});
       
         return this.each(function()
         {
           var $t = $(this).addClass('bigtext'),
-            childSelector = options.childSelector ||
-                  BigText.childSelectors[this.tagName.toLowerCase()] ||
-                  BigText.DEFAULT_CHILD_SELECTOR,
             maxWidth = $t.width(),
-            id = $t.attr('id');
-    
+            id = $t.attr('id'),
+            $children = options.childSelector ? $t.find( options.childSelector ) : $t.children();
+
           if(!id) {
             id = 'bigtext-id' + (counter++);
             $t.attr('id', id);
@@ -120,14 +117,14 @@
     
           BigText.clearCss(id);
     
-          $t.find(childSelector).addClass(function(lineNumber, className)
+          $children.addClass(function(lineNumber, className)
           {
             // remove existing line classes.
             return [className.replace(new RegExp('\\b' + BigText.LINE_CLASS_PREFIX + '\\d+\\b'), ''),
                 BigText.LINE_CLASS_PREFIX + lineNumber].join(' ');
           });
     
-          var sizes = calculateSizes($t, childSelector, maxWidth, options.maxfontsize, options.minfontsize);
+          var sizes = calculateSizes($t, $children, maxWidth, options.maxfontsize, options.minfontsize);
           $headCache.append(BigText.generateCss(id, sizes.fontSizes, sizes.wordSpacings, sizes.minFontSizes));
         });
       }
@@ -135,14 +132,14 @@
 
   function testLineDimensions($line, maxWidth, property, size, interval, units, previousWidth)
   {
-    var width,
-      previousWidth = typeof previousWidth == 'number' ? previousWidth : 0;
+    var width;
+    previousWidth = typeof previousWidth == 'number' ? previousWidth : 0;
     $line.css(property, size + units);
 
     width = $line.width();
 
     if(width >= maxWidth) {
-// console.log(width, 'previous:', previousWidth, property + ' at ' + interval, parseFloat(size) - interval, parseFloat(size), $line.get(0));
+// console.log(width, ' previous: ' + previousWidth, property + ' at ' + interval, 'prior: ' + (parseFloat(size) - interval), 'new:' + parseFloat(size));
       $line.css(property, '');
 
       if(width == maxWidth) {
@@ -151,28 +148,34 @@
           size: parseFloat((parseFloat(size) - 0.1).toFixed(3))
         };
       }
+
+      // Since this is an estimate, we calculate how far over the width we went with the new value.
+      // If this is word-spacing (our last resort guess) and the over is less than the under, we keep the higher value.
+      // Otherwise, we revert to the underestimate.
       var under = maxWidth - previousWidth,
         over = width - maxWidth;
 
       return {
         match: 'estimate',
-        size: parseFloat((parseFloat(size) - (previousWidth && over < under ? 0 : interval)).toFixed(3))
+        size: parseFloat((parseFloat(size) - (property === 'word-spacing' && previousWidth && ( over < under ) ? 0 : interval)).toFixed(3))
       };
     }
 
     return width;
   }
 
-  function calculateSizes($t, childSelector, maxWidth, maxFontSize, minFontSize)
+  function calculateSizes($t, $children, maxWidth, maxFontSize, minFontSize)
   {
     var $c = $t.clone(true)
           .addClass('bigtext-cloned')
           .css({
             fontFamily: $t.css('font-family'),
             textTransform: $t.css('text-transform'),
+            wordSpacing: $t.css('word-spacing'),
+            letterSpacing: $t.css('letter-spacing'),
             position: 'absolute',
-            left: -9999,
-            top: -9999
+            left: BigText.DEBUG_MODE ? 0 : -9999,
+            top: BigText.DEBUG_MODE ? 0 : -9999
           }).appendTo(document.body);
 
     // font-size isn't the only thing we can modify, we can also mess with:
@@ -184,10 +187,10 @@
       minFontSizes = [],
       ratios = [];
 
-    $c.find(childSelector).css('float', 'left').each(function(lineNumber) {
+    $children.css('float', 'left').each(function(lineNumber) {
       var $line = $(this),
-        // TODO replace 4 with a proportional size to the calculated font-size.
-        intervals = BigText.test.noFractionalFontSize ? [4, 1] : [4, 1, 0.4, 0.1],
+        // TODO replace 8, 4 with a proportional size to the calculated font-size.
+        intervals = BigText.test.noFractionalFontSize ? [8, 4, 1] : [8, 4, 1, 0.1],
         lineMax;
 
       if($line.hasClass(BigText.EXEMPT_CLASS)) {
@@ -198,14 +201,14 @@
       }
 
       // TODO we can cache this ratio?
-      var autoGuessSubtraction = 20, // px
+      var autoGuessSubtraction = 32, // font size in px
         currentFontSize = parseFloat($line.css('font-size')),
-        lineWidth = $line.width(),
-        ratio = (lineWidth / currentFontSize).toFixed(6),
-        newFontSize = parseFloat(((maxWidth - autoGuessSubtraction) / ratio).toFixed(3));
+        ratio = ( $line.width() / currentFontSize ).toFixed(6);
+
+      newFontSize = parseInt( maxWidth / ratio, 10 ) - autoGuessSubtraction;
 
       outer: for(var m=0, n=intervals.length; m<n; m++) {
-        inner: for(var j=1, k=4; j<=k; j++) {
+        inner: for(var j=1, k=10; j<=k; j++) {
           if(newFontSize + j*intervals[m] > maxFontSize) {
             newFontSize = maxFontSize;
             break outer;
@@ -261,7 +264,13 @@
       wordSpacings.push(wordSpacing);
     }).removeAttr('style');
 
-    $c.remove();
+    if( !BigText.DEBUG_MODE ) {
+      $c.remove();
+    } else {
+      $c.css({
+        'background-color': 'rgba(255,255,255,.4)'
+      });
+    }
 
     return {
       fontSizes: fontSizes,

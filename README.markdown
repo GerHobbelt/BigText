@@ -1,23 +1,42 @@
 BigText Makes Text Big
 ============================
 
+* Read the [original blog post](http://www.zachleat.com/web/bigtext-makes-text-big/)
+* Play around on the [demo](http://www.zachleat.com/bigtext/)
+* Watch the [video](http://www.youtube.com/watch?v=OuqB6e6NPRM)
+
 Requirements
 ----------------------------
 
 1. jQuery
-1. A block level parent element, with block level children.
+1. A block level parent element. BigText will force all children to be block level as well.
 
 Examples
 ----------------------------
 
-### Normal Usage
+### Simple Example
 
     <div id="bigtext">
-        <div>BIGTEXT</div>
-        <div>Makes Text Big</div>
+        <span>BIGTEXT</span>
+        <span>Makes Text Big</span>
     </div>
     <script>
     $('#bigtext').bigtext();
+    </script>
+
+### Better, Progressive Enhancement-Based Example
+
+Use `display: inline` children (like a `span`) so the text will flow correctly if BigText doesn’t run.
+
+    <div id="bigtext">
+        <span>BIGTEXT</span>
+        <span>Makes Text Big</span>
+    </div>
+    <script>
+    // Only BigText on “new-ish” browsers
+    if( 'querySelectorAll' in document ) {
+        $('#bigtext').bigtext();    
+    }
     </script>
 
 ### Using a List (ordered/unordered)
@@ -30,7 +49,9 @@ Examples
     $('#bigtext').bigtext();
     </script>
 
-### Using other block child elements
+### Restrict to a subset of children
+
+#### Opt-in children with JS
 
     <div id="bigtext">
         <p>BIGTEXT</p>
@@ -42,7 +63,7 @@ Examples
     });
     </script>
 
-### Exempting/Excluding Lines
+#### Opt-out lines using markup
 
     <ol id="bigtext">
         <li>BIGTEXT</li>
@@ -66,13 +87,15 @@ Examples
     $('#bigtext').bigtext();
     </script>
 
+Works also with `letter-spacing`, `word-spacing`, and `text-transform`.
+
 ### Using with Custom Font-Face
 
 **Warning**: a known issue exists with the [Google/TypeKit font loader in WebKit](https://github.com/typekit/webfontloader/issues/26).
 
     <div id="bigtext">
-        <div>BIGTEXT</div>
-        <div>Makes Text Big</div>
+        <span>BIGTEXT</span>
+        <span>Makes Text Big</span>
     </div>
     <script src="//ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>
     <script>
@@ -92,7 +115,7 @@ Examples
 ### Change the default max font size
 
     <div id="bigtext">
-        <div>BIG</div><!-- the shorter the line, the larger the size required --> 
+        <span>BIG</span><!-- the shorter the line, the larger the size required --> 
     </div>
     <script>
     $('#bigtext').bigtext({
@@ -103,7 +126,7 @@ Examples
 ### Adding a default min font size
 
     <div id="bigtext">
-        <div>This is a super long line that will probably be resized to epically small proportions. We need a minimum font size!</div>
+        <span>This is a super long line that will probably be resized to epically small proportions. We need a minimum font size!</span>
     </div>
     <script>
     $('#bigtext').bigtext({
@@ -122,23 +145,18 @@ Extra Features
 
 BigText does not implement its own debounced resize event, to reduce duplicate code. However, it does search for existing implementations. For example, [Ben Alman's Throttle/Debounce plugin](https://github.com/cowboy/jquery-throttle-debounce) or [Louis-Remi Babe's SmartResize](https://github.com/lrbabe/jquery-smartresize/), in that order.  If no debounced plugin is found, BigText will bind to the native resize event.
 
+### Debug Mode
+
+BigText uses an off-canvas detached node to improve performance when sizing. Setting `DEBUG_MODE` to true will leave this detached node on the canvas for visual inspection for problem resolution.
+
+    BigText.DEBUG_MODE = true;
+
 Common Problems
 ----------------------------
 
 ### Lines Wrapping Pre-BigText
 
-The starting font-size must be small enough to guarantee that each individual line is not wrapping pre-BigText.  Adjust the amount of text per line, or set the starting font size using the example below.
-
-#### Change the default min (starting) font size
-
-    <div id="bigtext">
-        <div>This is a really long line, that may be too long since it might wrap.</div>
-    </div>
-    <script>
-    // Global Configuration Option
-    BigText.STARTING_PX_FONT_SIZE = 8; // default is 11 (in px)
-    $('#bigtext').bigtext();
-    </script>
+The starting font-size must be small enough to guarantee that each individual line is not wrapping pre-BigText. If the line is too long, BigText will not size it correctly.
     
 Releases
 ----------------------------
@@ -146,3 +164,10 @@ Releases
 * `v1.0` Initial release
 * `v1.1` Added line exempt feature.
 * `v1.2` Responsive BigText resizes with media queries and resize events (optionally debounced).
+* `v1.3`
+* `v1.4` on `2013-08-24` Numerous bug fixes, improved accuracy, adds debug mode. 
+
+Build Status
+----------------------------
+
+[![Build Status](https://travis-ci.org/zachleat/BigText.png?branch=master)](https://travis-ci.org/zachleat/BigText)
