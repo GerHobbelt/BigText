@@ -10,12 +10,18 @@
 
 ## [Download bigtext.js](https://zachleat.github.io/BigText/dist/bigtext.js)
 
+Or use [bower](http://bower.io/): `bower install bigtext`
+
 ## [Run the Tests](http://zachleat.github.io/BigText/test/test.html)
 
 ## Requirements
 
 1. jQuery
 1. A block level parent element. BigText will force all children to be block level as well.
+
+## Learn More
+
+BigText works best on browsers that support [subpixel font scaling](http://status.modern.ie/subpixelfontscaling). In order to best serve sizes to all browsers, BigText will adjust `word-spacing` as well as `font-size`.
 
 ## Examples
 
@@ -124,7 +130,7 @@ Works also with `letter-spacing`, `word-spacing`, and `text-transform`.
     </div>
     <script>
     $('#bigtext').bigtext({
-        maxfontsize: 60 // default is 48 (in px)
+        maxfontsize: 60 // default is 528 (in px)
     });
     </script>
 
